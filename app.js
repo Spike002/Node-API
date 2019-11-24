@@ -6,6 +6,8 @@ const bodyParser = require('body-parser')
 var cookieParser = require('cookie-parser')
 const expressValidator = require('express-validator')
 const dotenv = require('dotenv')
+const fs = require('fs')
+const cors = require('cors')
 
 dotenv.config()
 
@@ -21,8 +23,23 @@ mongoose.connection.on('error', error => {
   console.log(`DB connection error: ${error.message}`);
 })
 
+//bring in routes
 const postRoutes = require('./routes/post')
 const authRoutes = require('./routes/auth')
+const userRoutes = require('./routes/user')
+
+//apiDocs
+app.get('/', (req, res) => {
+  fs.readFile('docs/apiDocs.json', (error, data) => {
+    if(error){
+      res.status(400).json({
+        error: error
+      })
+    }
+    const docs = JSON.parse(data)
+    res.json(docs)
+  })
+})
 
 
 // middleware
@@ -30,9 +47,18 @@ app.use(morgan("dev"))
 app.use(bodyParser.json())
 app.use(cookieParser())
 app.use(expressValidator())
+app.use(cors())
 
 app.use('/', postRoutes )
 app.use('/', authRoutes )
+app.use('/', userRoutes )
+
+
+app.use(function (error, req, res, next) {
+  if (error.name === 'UnauthorizedError'){
+    res.status(401).json({error: "You are unauthorized."})
+  }
+})
 
 
 
